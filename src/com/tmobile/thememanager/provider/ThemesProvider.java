@@ -41,16 +41,21 @@ import android.content.res.Resources.NotFoundException;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.Process;
 import android.provider.MediaStore.Audio;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -125,13 +130,14 @@ public class ThemesProvider extends ContentProvider {
                     ThemeColumns.NOTIFICATION_RINGTONE_URI + " TEXT, " +
                     ThemeColumns.THUMBNAIL_URI + " TEXT, " +
                     ThemeColumns.PREVIEW_URI + " TEXT, " +
+                    ThemeColumns.PREVIEW_HASH + " TEXT, " +
                     ThemeColumns.HAS_HOST_DENSITY + " INTEGER DEFAULT 1, " +
                     ThemeColumns.HAS_THEME_PACKAGE_SCOPE + " INTEGER DEFAULT 1" +
                     ")");
             db.execSQL("CREATE INDEX themeitem_map_package ON themeitem_map (theme_package)");
             db.execSQL("CREATE UNIQUE INDEX themeitem_map_key ON themeitem_map (theme_package, theme_id)");
 
-            SystemThemeMeta systemTheme = SystemThemeMeta.inflate(mContext.getResources(),
+            SystemThemeMeta systemTheme = SystemThemeMeta.inflate(mContext,mContext.getResources(),
                     R.xml.system_theme);
 
             /*
@@ -157,14 +163,15 @@ public class ThemesProvider extends ContentProvider {
                     ThemeColumns.NOTIFICATION_RINGTONE_NAME + ", " +
                     ThemeColumns.NOTIFICATION_RINGTONE_NAME_KEY + ", " +
                     ThemeColumns.NOTIFICATION_RINGTONE_URI + ", " +
-                    ThemeColumns.PREVIEW_URI +
-                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    ThemeColumns.PREVIEW_URI + ", " +
+                    ThemeColumns.PREVIEW_HASH +
+                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     new Object[] { "", "", 1, systemTheme.author, 1, systemTheme.name, systemTheme.styleName,
                     systemTheme.wallpaperName, systemTheme.wallpaperUri,
                     null, null, /* Lock wallpaper */
                     null, null, null, /* Ringtone */
                     null, null, null, /* Notification ringtone */
-                    systemTheme.previewUri } );
+                    systemTheme.previewUri, systemTheme.previewHash } );
         }
 
         private void dropTables(SQLiteDatabase db) {
@@ -438,7 +445,7 @@ public class ThemesProvider extends ContentProvider {
             TypedValue outValue = new TypedValue();
             res.getValue(ti.previewResourceId, outValue, true);
             int density = (outValue.density == TypedValue.DENSITY_DEFAULT) ?
-                    DisplayMetrics.DENSITY_DEFAULT : outValue.density;
+                    DisplayMetrics.DENSITY_XHIGH : outValue.density;            
             return density == res.getDisplayMetrics().densityDpi;
         } catch (NotFoundException e) {
             Log.w(TAG, "Missing required resource in package " + pi.packageName + ": " +
@@ -451,16 +458,16 @@ public class ThemesProvider extends ContentProvider {
     }
 
     private static boolean hasThemePackageScope(Context context, PackageInfo pi, ThemeInfo ti) {
-        if ((ti.previewResourceId >>> 24) == 0x0a) {
+        if ((ti.previewResourceId >>> 24) == 0x0a || (ti.previewResourceId >>> 24) == 0x02) {
             return true;
         }
-        if ((ti.styleResourceId >>> 24) == 0x0a) {
+        if ((ti.styleResourceId >>> 24) == 0x0a || (ti.styleResourceId >>> 24) == 0x02) {
             return true;
         }
-        if ((ti.wallpaperResourceId >>> 24) == 0x0a) {
+        if ((ti.wallpaperResourceId >>> 24) == 0x0a || (ti.wallpaperResourceId >>> 24) == 0x02) {
             return true;
         }
-        if ((ti.thumbnailResourceId >>> 24) == 0x0a) {
+        if ((ti.thumbnailResourceId >>> 24) == 0x0a || (ti.thumbnailResourceId >>> 24) == 0x02) {
             return true;
         }
         return false;
@@ -507,9 +514,22 @@ public class ThemesProvider extends ContentProvider {
                         .toString());
         }
         if (ti.previewResourceId != 0) {
-            outValues.put(ThemeColumns.PREVIEW_URI,
-                    PackageResources.makeResourceIdUri(pi.packageName, ti.previewResourceId)
-                        .toString());
+        	Uri uri = PackageResources.makeResourceIdUri(pi.packageName, ti.previewResourceId);
+            outValues.put(ThemeColumns.PREVIEW_URI,uri.toString());
+            String hash = "";
+            try{
+            	InputStream is = context.getContentResolver().openInputStream(uri);
+            	Bitmap b = BitmapFactory.decodeStream(is);
+    			Bitmap scaled = Bitmap.createScaledBitmap(b, 253, 450, false);
+    			ByteArrayOutputStream stream = new ByteArrayOutputStream();
+    			
+    			scaled.compress(Bitmap.CompressFormat.PNG, 100, stream);
+    			byte[] data = stream.toByteArray();    			
+    			hash = Base64.encodeToString(data, 0);
+            	
+            }catch(Exception e){
+            }
+            outValues.put(ThemeColumns.PREVIEW_HASH, hash);
         }
 
         try {

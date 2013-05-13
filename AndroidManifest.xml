@@ -58,16 +58,17 @@
         android:label="@string/app_name">
 
         <provider android:name=".provider.PackageResourcesProvider"
-            android:exported="true"
-            android:authorities="com.tmobile.thememanager.packageresources" />
+            android:authorities="com.tmobile.thememanager.packageresources"
+            android:grantUriPermissions="true"
+        	android:exported="true" />
 
         <provider android:name=".provider.ThemesProvider"
-            android:exported="true"
-            android:authorities="com.tmobile.thememanager.themes" />
+            android:authorities="com.tmobile.thememanager.themes"
+            android:grantUriPermissions="true"
+        	android:exported="true" />
 
         <receiver
             android:name=".receiver.ChangeThemeReceiver"
-            android:exported="true"
             android:permission="com.tmobile.permission.CHANGE_THEME">
 
             <intent-filter android:priority="100">

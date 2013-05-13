@@ -19,13 +19,19 @@ package com.tmobile.thememanager.provider;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
+import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.view.InflateException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Holds information about the "default" system theme. This is inserted as a
@@ -37,7 +43,8 @@ class SystemThemeMeta {
     public String styleName;
     public String wallpaperName;
     public Uri wallpaperUri;
-    public Uri previewUri;
+    public Uri previewUri; 
+    public String previewHash;
 
     private static final String XML_THEME_TAG = "theme";
     private static final String XML_AUTHOR_TAG = "author";
@@ -46,10 +53,13 @@ class SystemThemeMeta {
     private static final String XML_WALLPAPER_NAME_TAG = "wallpaperName";
     private static final String XML_WALLPAPER_URI_TAG = "wallpaperUri";
     private static final String XML_PREVIEW_URI_TAG = "previewUri";
+    
+    private static Context mContext;
 
     private SystemThemeMeta() {}
 
-    public static SystemThemeMeta inflate(Resources res, int resId) {
+    public static SystemThemeMeta inflate(Context context,Resources res, int resId) {
+    	mContext = context;
         SystemThemeMeta theme = new SystemThemeMeta();
         XmlResourceParser parser = res.getXml(resId);
         try {
@@ -99,6 +109,16 @@ class SystemThemeMeta {
                 } else if (XML_PREVIEW_URI_TAG.equals(tagName)) {
                     theme.previewUri = Uri.parse(parser.nextText());
                     parser.require(XmlPullParser.END_TAG, null, XML_PREVIEW_URI_TAG);
+                    try{
+                    	InputStream is = mContext.getContentResolver().openInputStream(theme.previewUri);
+                    	Bitmap b = BitmapFactory.decodeStream(is);
+                    	Bitmap scaled = Bitmap.createScaledBitmap(b, 253, 450, false);
+                    	ByteArrayOutputStream stream = new ByteArrayOutputStream();        			
+                    	scaled.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                    	byte[] data = stream.toByteArray();
+                    	theme.previewHash = Base64.encodeToString(data, 0);
+                    }catch(Exception e){                    	
+                    }
                 }
             } else if (eventType == XmlPullParser.END_DOCUMENT) {
                 return false;

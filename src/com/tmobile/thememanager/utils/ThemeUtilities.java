@@ -32,10 +32,12 @@ import android.content.res.Configuration;
 import android.content.res.CustomTheme;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.provider.Settings;
 import android.util.Log;
 
 public class ThemeUtilities {
 
+	private static final String SYSTEM_URI = "content://com.tmobile.thememanager.themes/theme/system";
     /**
      * Applies just the configuration portion of the theme. No wallpapers or
      * ringtones are set.
@@ -95,25 +97,17 @@ public class ThemeUtilities {
             ringtoneUri = (Uri)request.getParcelableExtra(ThemeManager.EXTRA_RINGTONE_URI);
             notificationRingtoneUri = (Uri)request.getParcelableExtra(ThemeManager.EXTRA_NOTIFICATION_RINGTONE_URI);
             liveWallPaperComponent = (ComponentName)request.getParcelableExtra(ThemeManager.EXTRA_LIVE_WALLPAPER_COMPONENT);
-        }
-
-        if (Constants.DEBUG) {
-            Log.i(Constants.TAG, "applyTheme: theme=" + theme.getUri(context) +
-                    ", wallpaperUri=" + wallpaperUri +
-                    ", lockWallpaperUri=" + lockWallpaperUri +
-                    ", liveWallPaperComponent=" + liveWallPaperComponent +
-                    ", ringtoneUri=" + ringtoneUri +
-                    ", notificationRingtoneUri=" + notificationRingtoneUri);
-        }
+        }        
 
         if (liveWallPaperComponent != null) {
             WallpaperUtilities.setLiveWallpaper(context, liveWallPaperComponent);
-        } else {
+        } else if(!theme.getUri(context).toSafeString().equals(SYSTEM_URI)){        	
             if (wallpaperUri == null) {
                 wallpaperUri = theme.getWallpaperUri(context);
             }
             if (wallpaperUri != null) {
                 WallpaperUtilities.setWallpaper(context, wallpaperUri);
+                Settings.System.putString(context.getContentResolver(), Settings.System.THEME_WALLPAPER, wallpaperUri.toString());
             }
         }
         if (!dontSetLockWallpaper) {
@@ -144,6 +138,15 @@ public class ThemeUtilities {
             RingtoneManager.setActualDefaultRingtoneUri(context, RingtoneManager.TYPE_NOTIFICATION,
                     ThemeManager.SILENT_RINGTONE_URI.equals(notificationRingtoneUri) ? null :
                             notificationRingtoneUri);
+        }
+        
+        if (Constants.DEBUG) {
+            Log.i(Constants.TAG, "applyTheme: theme=" + theme.getUri(context) +
+                    ", wallpaperUri=" + wallpaperUri +
+                    ", lockWallpaperUri=" + lockWallpaperUri +
+                    ", liveWallPaperComponent=" + liveWallPaperComponent +
+                    ", ringtoneUri=" + ringtoneUri +
+                    ", notificationRingtoneUri=" + notificationRingtoneUri);
         }
 
         applyStyleInternal(context, theme);
