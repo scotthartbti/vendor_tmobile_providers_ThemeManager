@@ -15,10 +15,9 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">主题提供器</string>
-    <string name="permlab_access_DrmThemeResources">读取带有 DRM 保护的媒体资源</string>
-    <string name="permdesc_access_DrmThemeResources">授予程序读取带有 DRM 保护媒体资源的权限</string>
-    <string name="permlab_set_theme">设定全系统应用的主题</string>
-    <string name="permdesc_set_theme" product="tablet">允许程序改变您的平板的视觉主题。</string>
-    <string name="permdesc_set_theme" product="default">允许程序改变您的手机的视觉主题。</string>
+    <string name="app_name">Gestor de Temas</string>
+    <string name="permlab_access_DrmThemeResources">Ler recursos de multimédia protegidos por direitos digitais</string>
+    <string name="permdesc_access_DrmThemeResources">Permite uma aplicação ter acesso aos recursos de multimédia dos Pacotes de Temas protegidos por direitos digitais.</string>
+    <string name="permlab_set_theme">Definir tema a ser aplicado globalmente</string>
+    <string name="permdesc_set_theme">Permite à aplicação trocar o tema visual do seu telefone.</string>
 </resources>
